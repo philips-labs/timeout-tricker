@@ -9,7 +9,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o timeout-tricker
 
 FROM alpine:latest 
-RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
+RUN apk update && apk add ca-certificates mailcap && rm -rf /var/cache/apk/*
 WORKDIR /app
 COPY --from=builder /build/timeout-tricker /app
 EXPOSE 8080
