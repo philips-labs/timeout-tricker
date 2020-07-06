@@ -7,9 +7,12 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
+	"mime"
 )
+
 func main() {
 	// Config
 	host := os.Getenv("HOST")
@@ -58,9 +61,19 @@ func timeoutFixerFor(host, scheme string, timeout int) echo.HandlerFunc {
 			done <- true
 		}()
 
+		// Set correct mime-type
+		ext := filepath.Ext(req.URL.Path)
+		mimeType := mime.TypeByExtension(ext)
+		if mimeType == "" {
+			mimeType = "text/html" // Default
+		}
+		c.Response().Header().Set("Content-Type", mimeType)
+		c.Response().Header().Set("X-Proxy-Pass", "timeout-tricker")
+
 		// Write headers
 		// We may have to use some heuristics based on the request
 		// to send the correct headers
+		headersSent := false
 
 		for {
 			select {
@@ -68,6 +81,14 @@ func timeoutFixerFor(host, scheme string, timeout int) echo.HandlerFunc {
 				// Upstream request is done!
 				// Write out the original body
 				fmt.Printf("remote request finished\n")
+				// and header if we did not sent anything yet!
+				if !headersSent {
+					writer := c.Response().Writer
+					for k, v := range recorder.Header() {
+						writer.Header()[k] = v
+					}
+					c.Response().WriteHeader(recorder.Result().StatusCode)
+				}
 				_, err := c.Response().Writer.Write(recorder.Body.Bytes())
 				return err
 			case <-time.After(time.Duration(timeout) * time.Second):
@@ -77,6 +98,7 @@ func timeoutFixerFor(host, scheme string, timeout int) echo.HandlerFunc {
 					fmt.Printf("flushing\n")
 					f.Flush()
 				}
+				headersSent = true
 			}
 		}
 	}
