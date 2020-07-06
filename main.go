@@ -49,6 +49,8 @@ func timeoutFixerFor(host, scheme string, timeout int) echo.HandlerFunc {
 		proxy := &httputil.ReverseProxy{Director: director}
 		recorder := httptest.NewRecorder()
 		done := make(chan bool)
+		// Replace accept-encoding header
+		req.Header.Set("Accept-Encoding", "identity")
 
 		// This might take up to an hour, so spawn a go routine
 		go func() {
