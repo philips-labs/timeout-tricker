@@ -16,7 +16,7 @@ the expected response.
 -	Buffer or store the response temporarily in case of binary BODY and generate a HTML redirect on-the-fly to this location
 
 
-# Contact / getting help
+# contact / getting help
 
 * andy.lo-a-foe@philips.com
 
